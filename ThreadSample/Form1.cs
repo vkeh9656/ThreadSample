@@ -32,6 +32,16 @@ namespace ThreadSample
             _locY = this.Location.Y;
         }
 
+        List<SubForm> liSubForm = new List<SubForm>();
+
+        private void Form1_FormClosing(object sender, System.Windows.Forms.FormClosingEventArgs e)
+        {
+            foreach(SubForm subForm in liSubForm)
+            {
+                subForm.ThreadAbort(); // 프로그램 종료 시점이라서 강제로 Thread를 해제
+            }    
+        }
+
         private void btnStart_Click(object sender, EventArgs e)
         {
             _locX = this.Location.X + this.Size.Width;
@@ -45,6 +55,8 @@ namespace ThreadSample
                 sf.Show();
 
                 sf.ThreadOn();
+
+                liSubForm.Add(sf);
             }
         }
 

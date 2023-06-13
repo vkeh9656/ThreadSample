@@ -102,6 +102,7 @@ namespace ThreadSample
 
         }
 
+        // 쓰레드를 끊는다는 것, 지정된 함수를 끊는다는 것.
         private void btnStop_Click(object sender, EventArgs e)
         {
             if(_thread.IsAlive) _bThreadStop = true;
