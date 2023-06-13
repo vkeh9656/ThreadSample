@@ -21,6 +21,7 @@ namespace ThreadSample
         
         Thread _thread = null;
 
+        bool _bThreadStop = false; // Thread Stop을 위한 Flag
         
 
         public SubForm()
@@ -51,36 +52,83 @@ namespace ThreadSample
 
         private void Run()
         {
-            // UI Control이 자기가 만든 Thread가 아닌, 새로 생성한 Thread에서 접근할 경우(지금의 경우 new Thread(Run)), Cross Thread가 발생
-
-            // Cross Thread Error를 무시해버리는 Config => Thread 충돌에 대한 예외 처리를 무시(Cross Thread), 그래서 사용 비추천
-            // CheckForIllegalCrossThreadCalls = false;
-
-            int ivar = 0;
-            Random rd = new Random();
-
-            while (pbarPlayer.Value < 100 )
+            try
             {
-                if(this.InvokeRequired) // 요청한 Thread가 현재 Main Thread에 있는 Control을 액세스 할 수 있는지 확인
+                // UI Control이 자기가 만든 Thread가 아닌, 새로 생성한 Thread에서 접근할 경우(지금의 경우 new Thread(Run)), Cross Thread가 발생
+
+                // Cross Thread Error를 무시해버리는 Config => Thread 충돌에 대한 예외 처리를 무시(Cross Thread), 그래서 사용 비추천
+                // CheckForIllegalCrossThreadCalls = false;
+
+                int ivar = 0;
+                Random rd = new Random();
+
+                while (pbarPlayer.Value < 100 && !_bThreadStop)
                 {
-                    this.Invoke(new Action(delegate ()
-                    {//함수 값 (컨트롤 사용할때만 잠시 넣어줄 것임)
-                        ivar = rd.Next(1, 11);
-                        pbarPlayer.Value = (pbarPlayer.Value + ivar > 100) ?
-                            pbarPlayer.Value = 100 :
-                            pbarPlayer.Value = pbarPlayer.Value + ivar;
+                    if (this.InvokeRequired) // 요청한 Thread가 현재 Main Thread에 있는 Control을 액세스 할 수 있는지 확인
+                    {
+                        this.Invoke(new Action(delegate ()
+                        {//함수 값 (컨트롤 사용할때만 잠시 넣어줄 것임)
+                            ivar = rd.Next(1, 11);
+                            pbarPlayer.Value = (pbarPlayer.Value + ivar > 100) ?
+                                pbarPlayer.Value = 100 :
+                                pbarPlayer.Value = pbarPlayer.Value + ivar;
 
-                        lblProgress.Text = string.Format("진행 상황 표시 : {0}%", pbarPlayer.Value);
+                            lblProgress.Text = string.Format("진행 상황 표시 : {0}%", pbarPlayer.Value);
 
-                        this.Refresh();
-                    }));
+                            this.Refresh();
+                        }));
+                    }
+
+                    Thread.Sleep(300);
                 }
-                
-                Thread.Sleep(300);
+                if (_bThreadStop)
+                {
+                    eventDeleMessage(this, "중단 (Thread Stop)");
+                }
+                else
+                {
+                    eventDeleMessage(this, "완료 (Thread Complete)");
+                }
             }
+            catch(ThreadInterruptedException exInterrupt) 
+            {
+                exInterrupt.ToString();
+            }
+            catch (Exception ex)
+            {
+                ex.ToString();
+            }
+            
 
-            eventDeleMessage(this, "완료 (Thread Complete)");
+        }
 
+        private void btnStop_Click(object sender, EventArgs e)
+        {
+            if(_thread.IsAlive) _bThreadStop = true;
+        }
+
+        public void ThreadAbort() // 바깥에서 끌때도 종료할 수 있도록 접근제한자를 public으로 둠.
+        {
+            if(_thread.IsAlive) // Thread가 동작중일 경우
+            {
+                _thread.Abort(); // Thread를 강제 종료
+            }
+        }
+
+        public void ThreadJoin()
+        {
+            if(_thread.IsAlive)
+            {
+                bool bThreadEnd = _thread.Join(3000); // Join : 중단시키고 대기하기
+            }
+        }
+
+        public void ThreadInterrupt()
+        {
+            if(_thread.IsAlive)
+            {
+                _thread.Interrupt();
+            }
         }
     }
 }
